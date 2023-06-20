@@ -1,0 +1,55 @@
+name: Create Release if New Version
+
+on:
+  push:
+    branches:
+      - main # or the branch you are using
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install toml and packaging packages
+        run: pip install toml packaging
+
+      - name: Get version from pyproject.toml
+        id: get_version
+        run: echo "::set-output name=version::$(python -c 'import toml; print(toml.load("pyproject.toml")["project"]["version"])')"
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Check if version is incremented
+        id: check_version
+        run: |
+          LATEST_TAG=$(git tag | sort -V | tail -n 1)
+          LATEST_TAG=${LATEST_TAG#v}
+          NEW_VERSION=${{ steps.get_version.outputs.version }}
+          python -c "from packaging.version import parse; exit(0 if parse('$NEW_VERSION') > parse('$LATEST_TAG') else 1)"
+        continue-on-error: true # Continue even if the new version is not incremented
+
+      - name: Create Tag
+        if: steps.check_version.outcome == 'success'
+        run: git tag v${{ steps.get_version.outputs.version }}
+
+      - name: Push Tag
+        if: steps.check_version.outcome == 'success'
+        run: git push --tags
+
+      - name: Create GitHub Release
+        if: steps.check_version.outcome == 'success'
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          commit: main # or the branch you are using
+          body: 'Description of the release v${{ steps.get_version.outputs.version }}'
