@@ -8,7 +8,7 @@ env:
 
 jobs:
   pypi-publish:
-    name: Upload Python Package
+    name: Publish Package to PyPI
     runs-on: ubuntu-latest
     steps:
       # Check out the repository content to the GitHub Actions runner.
