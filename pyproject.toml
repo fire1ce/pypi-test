@@ -1,15 +1,15 @@
 [build-system]
 requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[metadata]
+[project]
 name = "mkdocs-embed-external-markdown"
 version = "0.0.1"
 description = "Mkdocs plugin that allow to inject external markdown or markdown section from given url"
-long_description = { file = "README.md" }
-long_description_content_type = "text/markdown"
-author = "Stas Yakobov <dev@3os.org>"
-license = "MIT"
-url = "https://github.com/fire1ce/pypi-test"
+readme = {file = "README.md", content-type = "text/markdown"}
+authors = [{name = "Stas Yakobov", email = "dev@3os.org"}]
+license = {text = "MIT"}
+homepage = "https://github.com/fire1ce/pypi-test"
 keywords = [
   "mkdocs",
   "plugin",
@@ -23,14 +23,15 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.9",
 ]
-
-[options]
-packages = ["external_markdown"]
-python_requires = ">=3.9"
-install_requires = [
+requires-python = ">=3.9"
+dependencies = [
     "Jinja2>=3.1.0",
     "requests>=2.3.0"
 ]
 
-[options.entry_points."mkdocs.plugins"]
+[project.optional-dependencies]
+
+[project.scripts]
+
+[project.entry-points."mkdocs.plugins"]
 external-markdown = "external_markdown.plugin:EmbedExternalMarkdown"
