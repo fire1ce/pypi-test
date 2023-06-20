@@ -1,0 +1,41 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main # or the branch you are using
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install toml package
+        run: pip install toml
+
+      - name: Get version from pyproject.toml
+        id: get_version
+        run: echo "::set-output name=version::$(python -c 'import toml; print(toml.load("pyproject.toml")["project"]["version"])')"
+
+      - name: Create Tag
+        run: git tag v${{ steps.get_version.outputs.version }}
+
+      - name: Push Tag
+        run: git push --tags
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
