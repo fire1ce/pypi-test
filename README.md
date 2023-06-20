@@ -1,205 +1,82 @@
-# MkDocs Embed External Markdown Plugin
+# Pypi Publishing Actions Example
 
-[![PyPI - Downloads][pypi-image]][pypi-url]
-[![contributions welcome][contributions-image]][contributions-url]
-[![MIT license][license-image]][license-url]
+This repository contains GitHub Actions workflows that automate the process of creating GitHub releases and publishing a Python package to PyPI when a new version is specified in the `pyproject.toml` file.
 
-[pypi-image]: https://img.shields.io/pypi/dm/mkdocs-embed-external-markdown
-[pypi-url]: https://pypi.org/project/mkdocs-embed-external-markdown/
-[contributions-image]: https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat
-[contributions-url]: https://github.com/fire1ce/mkdocs-embed-external-markdown
-[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
-[license-url]: https://mit-license.org/
+## Repository Structure
 
-## About
-
-MkDocs Embed External Markdown plugin that allows to inject **section** or **full markdown** content from a given url.
-The goal is to embed different markdown from different sources inside your MkDocs project.
-
-## Version 3.xx
-
-Version 3.0.0 (2023-06-20)
-
-Added
-
-- [x] Modularized the code into separate methods for improved readability and maintainability.
-- [x] Added type hints for better code understanding and possible performance improvements.
-- [x] Included regex pre-compilation for performance enhancement.
-- [x] Enhanced URL validation to check for the structure of a URL rather than just the presence of .md.
-- [x] Improved error logging through the use of logger.warning instead of print statements, which integrates with MkDocs' logging system.
-- [x] Added handling for relative links in the markdown, making them absolute based on the base URL.
-- [x] Introduced better error handling for Connection Errors and Status Codes through optional return types.
-
-Removed:
-
-- [x] Removed the use of sys.exit(1) on error, allowing the MkDocs build process to continue even if the plugin encounters an issue.
-- [x] Removed the strict requirement for a section level at the beginning of a section name.
-      Changed
-- [x] Switched from using re.compile for one-time regex patterns to using re.match or re.search.
-- [x] Extracted the GitHub token once at the beginning of the request method instead of multiple times.
-- [x] Replaced the check for .md at the end of the URL with a more comprehensive regular expression to validate the URL's structure.
-
-Fixed:
-
-- [x] Handling of section extraction is now more robust and less prone to errors.
-
-Please note that this is a major version update and may contain breaking changes. Carefully read the updated documentation and test the plugin thoroughly before upgrading in a production environment.
-
-## Installation
-
-Install the package with pip:
-
-```shell
-pip install mkdocs-embed-external-markdown
+```plaintext
+.
+├── .github
+│   ├── workflows
+│   │   ├── create_release_if_new_version.yml
+│   │   └── publish-to-pypi.yml
+│   └
+└
 ```
 
-## Configuration
+## Workflows
 
-Enable the plugin in your `mkdocs.yml` file:
+### Create Release if New Version (`create_release_if_new_version.yml`)
 
-```yaml
-plugins:
-  - external-markdown
-```
+This workflow is responsible for creating a GitHub release when a new version of the Python package is specified in the `pyproject.toml` file. The workflow performs the following steps:
 
-## Compatibility with Github private repos
+- Gets triggered on pushes to the `main` branch.
+- Checks out the repository code.
+- Sets up Python.
+- Installs necessary Python packages (`toml` and `packaging`) required to read `pyproject.toml` and parse versions.
+- Retrieves the current version from `pyproject.toml`.
+- Fetches all tags to check against the latest tag.
+- Checks if the version is incremented compared to the latest tag.
+- If the version is incremented, it creates a new git tag.
+- Pushes the new git tag to the repository.
+- Creates a new GitHub release with the new tag.
 
-If the GH_TOKEN environment variable is set with an authorized personal access token then the authorization header will be added to the request and content from private repositories can be fetched
+### Publish Python Package to PyPI (`publish-to-pypi.yml`)
+
+This workflow is responsible for building the Python package and publishing it to PyPI. The workflow performs the following steps:
+
+- Gets triggered by the successful completion of the "Create Release if New Version" workflow.
+- Checks out the repository code.
+- Sets up Python.
+- Installs dependencies required to build and publish the package (`build` and `twine`).
+- Builds the Python package.
+- Publishes the package to PyPI or TestPyPI based on the configuration.
+
+## Setup
+
+- Configure the following secrets in your GitHub repository settings under "Secrets":
+
+  - `PYPI_API_TOKEN` - Your API token for PyPI (production).
+  - `TEST_PYPI_API_TOKEN` - Your API token for TestPyPI (testing).
+
+- Ensure that your project contains a valid `pyproject.toml` file with the package version specified.
+
+- Push your changes to the `main` branch.
 
 ## Usage
 
-- Section defined by **"##/###/####..."** header (h2/h3/h4...)
-- **"#"** header (h1) will be **removed** from source content so you can use use your own header
-- **"##/###/####..."** header (h2/h3/h4...) will be **removed** from source **section** content so you can use use your own header
-- Supports multiple **sections** from any source
+- Make changes to your Python package.
 
-`external_markdown` requires 2 parameters: **url** and **section name**.
+- Update the version in `pyproject.toml` according to semantic versioning.
 
-```makrdown
-{{ external_markdown('url', '## section name') }}
-```
+- Push the changes to the `main` branch.
 
-### Full Markdown Content
+- The "Create Release if New Version" workflow will run. If the version is incremented, a GitHub release will be created, and the "Publish Python Package to PyPI" workflow will be triggered.
 
-Embed full markdown content from a given url, you can use the following example:
+- The "Publish Python Package to PyPI" workflow will build and publish your package to the configured PyPI repository (TestPyPI or production PyPI).
 
-```markdown
-{{ external_markdown('https://raw.githubusercontent.com/fire1ce/DDNS-Cloudflare-Bash/main/README.md', '') }}
-```
+## Note
 
-### Specific Section
+- It is important to increment the version in `pyproject.toml` according to [semantic versioning](https://semver.org/) standards for the workflow to create a release.
 
-Embed markdown section from a given url, you can use the following example:
+- Ensure you have properly configured the `PYPI_API_TOKEN` and `TEST_PYPI_API_TOKEN` secrets in your GitHub repository.
 
-```markdown
-{{ external_markdown('https://raw.githubusercontent.com/fire1ce/DDNS-Cloudflare-Bash/main/README.md', '## Installation') }}
-```
+- When Github Repo is Protected, you need to allow `GITHUB_TOKEN` Read and Write access to the repository. Go to the repository Settings > Actions > General > Workflow Permissions > Allow Read and Write permissions.
 
-## MkDocs Example
+## Contributing
 
-The following example shows how to use the plugin in mkdocs project:
-
-````markdown
-# Example Page
-
-This is an example page.
-
-## Embedding Multiple Markdown Sections From Different URLs
-
-### First Embedded Section
-
-```markdown
-{{ external_markdown('https://raw.githubusercontent.com/mkdocs/mkdocs/master/README.md', '## Features') }}
-```
-
-### Second Embedded Section
-
-```markdown
-{{ external_markdown('https://raw.githubusercontent.com/squidfunk/mkdocs-material/master/README.md', '## Quick start') }}
-```
-````
-
-Will produce the following page:
-
-![MkDocs Embed External Markdown Plugin](https://user-images.githubusercontent.com/16795594/155761254-17b47e65-d27e-438b-a476-15bd04fdc3ec.jpg)
-
-## How To Prevent Accidental Interpretation Of `Jinja-like` Statements
-
-The most frequent issue when adding the `MkDocs Embed External Markdown Plugin` to an existing mkdocs project, is that some markdown pages may not be rendered correctly, or cause a syntax error, or some other error.
-
-The reason is that if Jinja2 template engine in the **MkDocs Embed External Markdown Plugin** meets any text that has the standard markers (typically starting with `{%`} or `{{`) this will cause a conflict: it will try to interpret that text as a macro and fail to behave properly.
-
-The most likely places where this can occur are the following:
-
-| Location in Markdown file (Block or Inline) | Description                                                                                                |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Code**                                    | Documented Jinja2 statements (or similar syntax), LaTeX                                                    |
-| **Maths**                                   | LaTeX statements                                                                                           |
-| _*Elsewhere*_                               | Some pre-existing templating or macro language, typically with some constructs starting with `{#` or `{{`. |
-
-### Code Blocks Containing Similar Languages
-
-With MkDocs, this situation typically occurs when the website
-is documenting an application that relies on a
-[djangolike/jinjalike language](https://medium.com/@i5ar/template-languages-a7b362971cbc) like:
-
-- Django Template Language
-- Jinja2 (Python)
-- Nunjucks (Javascript)
-- Twig (PHP)
-- ...
-
-This may also happen for pages that documents
-[Ansible](https://ansible-docs.readthedocs.io/zh/stable-2.0/rst/intro.html) directives, which often contain
-[variables expressed in a Jinja2 syntax](https://ansible-docs.readthedocs.io/zh/stable-2.0/rst/playbooks_variables.html#using-variables-about-jinja2).
-
-### Solutions - Explicitly Marking The Snippets as `raw`
-
-````markdown
-{% raw %}
-
-```bash
-docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container_name_or_id
-```
-
-{% endraw %}
-````
-
-## Known Issues
-
-- [ ]
-
-## Version 2.xx Changelog Archive
-
-**Braking change: Section name must include Markdown Section header like: `## Section name`**
-
-Changelog:
-
-- [x] Add ability to import content from private github repositories. Thanks to @sd0408
-- [x] Added support for multi level sections such as `### Section name` and `#### Section name`
-- [x] Better Handling of parsing makrdowns wich contains `#` in the content
-- [x] Failing Mkdocs Build when Markdown content cannot be fetched
+Contributions for improving the workflows are welcome. Please submit a pull request with your changes.
 
 ## License
 
-### MIT License
-
-Copyright© 3os.org @ 2022
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
+This project is licensed under the terms of the [MIT License](LICENSE.md).
