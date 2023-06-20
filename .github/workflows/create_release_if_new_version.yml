@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.9'
 
       # Install the Python packages required to read the 'pyproject.toml' file and to check versions.
       - name: Install toml and packaging packages
@@ -67,3 +67,11 @@ jobs:
           name: Release v${{ steps.get_version.outputs.version }}
           commit: main # or the branch you are using
           body: 'Description of the release v${{ steps.get_version.outputs.version }}'
+
+      # Trigger the "Publish Python Package" workflow if release was successfully created
+      - name: Trigger Publish Python Package Workflow
+        if: steps.check_version.outcome == 'success'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: 'Publish Python Package' # Replace this with the filename of the "Publish Python Package" workflow
+          token: ${{ secrets.GITHUB_TOKEN }}
