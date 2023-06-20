@@ -1,5 +1,4 @@
-name: Create Release if New Version
-
+name: Create release and tag on push from pyproject.toml
 on:
   push:
     branches:
@@ -30,16 +29,28 @@ jobs:
           TAG_EXISTS=$(git ls-remote --tags origin refs/tags/v${{ steps.get_version.outputs.version }} | wc -l)
           echo "::set-output name=tag_exists::${TAG_EXISTS}"
 
+      - name: Get latest release version
+        id: get_latest_release
+        run: |
+          LATEST_RELEASE=$(git describe --tags --abbrev=0)
+          echo "::set-output name=latest_release::${LATEST_RELEASE}"
+
+      - name: Check if version increased
+        id: version_increased
+        run: |
+          VERSION_INCREASED=$(python -c 'import sys; sys.exit(0 if tuple(map(int, sys.argv[1].split("."))) > tuple(map(int, sys.argv[2].split("."))) else 1)' "${{ steps.get_version.outputs.version }}" "${{ steps.get_latest_release.outputs.latest_release }}")
+          echo "::set-output name=version_increased::${VERSION_INCREASED}"
+
       - name: Create Tag
-        if: steps.check_tag.outputs.tag_exists == '0'
+        if: steps.check_tag.outputs.tag_exists == '0' && steps.version_increased.outputs.version_increased == '0'
         run: git tag v${{ steps.get_version.outputs.version }}
 
       - name: Push Tag
-        if: steps.check_tag.outputs.tag_exists == '0'
+        if: steps.check_tag.outputs.tag_exists == '0' && steps.version_increased.outputs.version_increased == '0'
         run: git push --tags
 
       - name: Create GitHub Release
-        if: steps.check_tag.outputs.tag_exists == '0'
+        if: steps.check_tag.outputs.tag_exists == '0' && steps.version_increased.outputs.version_increased == '0'
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
